@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grocery Price Comparison — Plan</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.6;color:#1a1a1a;background:#f7f7f8;padding:16px;max-width:860px;margin:0 auto}
+h1{font-size:1.6em;margin:20px 0 8px;color:#111}
+h2{font-size:1.3em;margin:28px 0 8px;color:#1a6b3c;border-bottom:2px solid #1a6b3c;padding-bottom:4px}
+h3{font-size:1.1em;margin:20px 0 6px;color:#333}
+p,li{margin:4px 0;font-size:0.95em}
+ul,ol{padding-left:24px;margin:8px 0}
+code{background:#e8e8ec;padding:2px 6px;border-radius:4px;font-size:0.88em}
+pre{background:#1e1e2e;color:#cdd6f4;padding:16px;border-radius:8px;overflow-x:auto;font-size:0.85em;margin:12px 0;line-height:1.5}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:0.9em}
+th{background:#1a6b3c;color:#fff;padding:10px 12px;text-align:left}
+td{padding:8px 12px;border-bottom:1px solid #ddd}
+tr:nth-child(even){background:#f0f0f3}
+.card{background:#fff;border-radius:10px;padding:20px;margin:16px 0;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:0.8em;font-weight:600;margin:2px 4px}
+.poc{background:#d4edda;color:#155724}
+.future{background:#fff3cd;color:#856404}
+.tag{background:#e0e7ff;color:#3730a3;padding:2px 8px;border-radius:6px;font-size:0.82em;font-weight:600}
+.vendor{display:inline-block;padding:4px 12px;border-radius:8px;font-weight:600;font-size:0.85em;margin:2px}
+.v-rami{background:#e8f5e9;color:#2e7d32}
+.v-shuf{background:#e3f2fd;color:#1565c0}
+.v-vic{background:#fce4ec;color:#c62828}
+hr{border:none;border-top:1px solid #ddd;margin:24px 0}
+a{color:#1a6b3c}
+.phase{border-left:4px solid #1a6b3c;padding-left:16px;margin:16px 0}
+.phase.future-phase{border-left-color:#f0ad4e}
+</style>
+</head>
+<body>
+
+<h1>🛒 Grocery Price Comparison App</h1>
+<p style="color:#555;font-size:1.05em">Compare prices across Israeli supermarkets, auto-fill cart, get a confirmation link.</p>
+
+<div class="card">
+<h2 style="border:none;margin-top:0">Full Product Vision</h2>
+<ol>
+<li><strong>Persist order history</strong> — track past purchases per vendor with barcodes, build a personal product DB over time</li>
+<li><strong>Image-based grocery lists</strong> — send photo of handwritten Hebrew list → vision/OCR maps to products in DB</li>
+<li><strong>Compare prices</strong> across <span class="vendor v-shuf">Shufersal</span> <span class="vendor v-rami">Rami Levy</span> <span class="vendor v-vic">Victory</span></li>
+<li><strong>Delivery windows</strong> — show available delivery times per vendor</li>
+<li><strong>Auto-fill cart</strong> — browser automation adds items to chosen vendor's cart</li>
+<li><strong>Confirmation link</strong> — user just clicks to confirm the pre-filled order</li>
+<li><strong>Deals &amp; alternatives</strong> — current promotions, suggest cheaper substitutes</li>
+<li><strong>Shared lists</strong> — spouse can add items with real-time notifications</li>
+</ol>
+</div>
+
+<div class="card" style="background:#d4edda">
+<h2 style="border-color:#155724;color:#155724;margin-top:0">POC Scope (First Build)</h2>
+<p><strong>Prove that we can:</strong></p>
+<ol>
+<li>Compare prices across all 3 vendors</li>
+<li>Fill a cart on the chosen vendor's website automatically</li>
+<li>Give the user a link to confirm the order manually</li>
+</ol>
+</div>
+
+<hr>
+<h2>Vendor Integration Details</h2>
+
+<div class="card">
+<h3><span class="vendor v-rami">Rami Levy</span> — Direct HTTP API <span class="badge poc">Easiest</span></h3>
+<p>Reverse-engineered REST API documented via <code>rami-levy-mcp</code> project.</p>
+<ul>
+<li><strong>Search:</strong> <code>POST /api/catalog {"q":"term","store":"331"}</code></li>
+<li><strong>Cart:</strong> <code>POST /api/cart</code> with product IDs + quantities</li>
+<li><strong>Auth:</strong> Bearer token + ecomtoken + cookie from browser <code>localStorage</code></li>
+<li><strong>Response:</strong> id, name, barcode, price, images, availability</li>
+</ul>
+<p>Token extraction: Playwright opens login page → user logs in → script reads <code>localStorage.ramilevy</code>.</p>
+<p><strong>Auto-refresh:</strong> detect 401 → re-authenticate via headless Playwright.</p>
+</div>
+
+<div class="card">
+<h3><span class="vendor v-shuf">Shufersal</span> — Playwright Automation <span class="badge future">Harder</span></h3>
+<p>No public API. Confirmed by <code>shufersal-mcp</code> project (uses Puppeteer).</p>
+<ul>
+<li>Persistent Playwright browser context (saves login session)</li>
+<li>First run: browser opens, user logs in manually, session saved</li>
+<li>Search: intercept XHR responses (preferred) or DOM scraping fallback</li>
+<li>Cart: search each product → click "Add to Cart" → set quantity</li>
+</ul>
+</div>
+
+<div class="card">
+<h3><span class="vendor v-vic">Victory</span> — Playwright Automation <span class="badge future">Harder</span></h3>
+<p>Runs on <strong>stor.ai</strong> white-label platform. No API docs.</p>
+<ul>
+<li>Same persistent browser context pattern as Shufersal</li>
+<li>Discovery: <code>playwright codegen https://www.victoryonline.co.il</code></li>
+<li>XHR interception with DOM scraping fallback</li>
+</ul>
+</div>
+
+<hr>
+<h2>Key Technical Findings</h2>
+
+<div class="card">
+<h3>🏛️ Government Price Data (Free, No Auth)</h3>
+<p>Israel's 2014 transparency law requires all major chains to publish machine-readable XML price data.</p>
+<ul>
+<li>Python packages: <code>il-supermarket-scraper</code> + <code>il-supermarket-parser</code></li>
+<li>Fields: ItemCode (barcode), ItemName, ItemPrice, Manufacturer, UnitOfMeasure</li>
+<li>Perfect for Phase 1 — prove comparison works with zero risk</li>
+</ul>
+</div>
+
+<div class="card">
+<h3>🔗 Product Matching Strategy</h3>
+<table>
+<tr><th>Tier</th><th>Method</th><th>Confidence</th></tr>
+<tr><td>1</td><td>Exact barcode (EAN-13) match</td><td>Gold standard</td></tr>
+<tr><td>2</td><td>Fuzzy Hebrew name match (<code>rapidfuzz token_sort_ratio ≥ 65%</code>)</td><td>Good</td></tr>
+<tr><td>3</td><td>Personal history match (future — use past purchases)</td><td>Improves over time</td></tr>
+</table>
+<p><strong>Challenges:</strong> store brands, weight vs unit, pack sizes, Hebrew morphology (prefix letters).</p>
+</div>
+
+<hr>
+<h2>Implementation Phases</h2>
+
+<div class="phase">
+<h3>Phase 1: Government Price Data <span class="badge poc">No credentials needed</span></h3>
+<ol>
+<li>Project skeleton + pyproject.toml + .gitignore</li>
+<li><code>src/gov_data/scraper.py</code> — download XML for 3 chains</li>
+<li><code>src/gov_data/parser.py</code> — XML → DataFrames</li>
+<li><code>src/gov_data/price_db.py</code> — barcode index + fuzzy search</li>
+<li><code>src/cli.py</code> — CLI comparison tool</li>
+</ol>
+</div>
+
+<div class="phase">
+<h3>Phase 2: Live Store Integration <span class="badge poc">POC</span></h3>
+<ol start="6">
+<li><code>src/models.py</code> + <code>src/vendors/base.py</code> — shared abstractions</li>
+<li><code>src/vendors/rami_levy.py</code> — HTTP API client</li>
+<li><code>scripts/extract_rami_tokens.py</code> — token extraction helper</li>
+<li><code>src/vendors/shufersal.py</code> — Playwright client</li>
+<li><code>src/vendors/victory.py</code> — Playwright client</li>
+<li><code>src/matching.py</code> — barcode + fuzzy matching</li>
+</ol>
+</div>
+
+<div class="phase">
+<h3>Phase 3: Cart Filling <span class="badge poc">Core POC Feature</span></h3>
+<ol start="12">
+<li><code>src/cart/base.py</code> — abstract CartManager</li>
+<li><code>src/cart/rami_levy_cart.py</code> — API-based cart filling</li>
+<li><code>src/cart/shufersal_cart.py</code> — Playwright cart filling</li>
+<li><code>src/cart/victory_cart.py</code> — Playwright cart filling</li>
+</ol>
+</div>
+
+<div class="phase">
+<h3>Phase 4: Web UI <span class="badge poc">POC</span></h3>
+<ol start="16">
+<li>FastAPI app + routes (<code>/api/compare</code>, <code>/api/fill-cart</code>)</li>
+<li>HTML template — list input → comparison table → "Fill Cart" → confirmation link</li>
+<li>Integration tests + smoke test</li>
+</ol>
+</div>
+
+<div class="phase future-phase">
+<h3>Future Phases <span class="badge future">Placeholder</span></h3>
+<ul>
+<li><strong>Phase 5:</strong> SQLite persistence — order history, personal product DB</li>
+<li><strong>Phase 6:</strong> Image list parsing — Claude vision API for Hebrew handwriting</li>
+<li><strong>Phase 7:</strong> Delivery windows — scrape/display available slots</li>
+<li><strong>Phase 8:</strong> Deals &amp; alternatives — promotions, cheaper options</li>
+<li><strong>Phase 9:</strong> Shared lists — multi-user with notifications</li>
+</ul>
+</div>
+
+<hr>
+<h2>Project Structure</h2>
+<pre>
+grocery-compare/
+├── pyproject.toml
+├── .env.example / .env (gitignored)
+├── src/
+│   ├── config.py              # pydantic-settings
+│   ├── models.py              # Product, PriceComparison, CartSession
+│   ├── matching.py            # barcode + fuzzy Hebrew matching
+│   ├── vendors/
+│   │   ├── base.py            # abstract VendorClient
+│   │   ├── rami_levy.py       # HTTP API (httpx)
+│   │   ├── shufersal.py       # Playwright
+│   │   └── victory.py         # Playwright
+│   ├── cart/
+│   │   ├── base.py            # abstract CartManager
+│   │   ├── rami_levy_cart.py
+│   │   ├── shufersal_cart.py
+│   │   └── victory_cart.py
+│   ├── gov_data/              # government XML pipeline
+│   ├── api/                   # FastAPI
+│   ├── web/                   # templates + static
+│   ├── db/                    # [PLACEHOLDER]
+│   ├── vision/                # [PLACEHOLDER]
+│   ├── delivery/              # [PLACEHOLDER]
+│   ├── deals/                 # [PLACEHOLDER]
+│   └── sharing/               # [PLACEHOLDER]
+├── scripts/
+├── tests/
+└── data/ (gitignored)
+</pre>
+
+<hr>
+<h2>Dependencies</h2>
+<pre>
+fastapi + uvicorn + jinja2     # web framework
+httpx                          # async HTTP (Rami Levy API)
+playwright                     # browser automation
+il-supermarket-scraper         # gov XML download
+il-supermarket-parser          # XML parsing
+pandas                         # data processing
+rapidfuzz                      # fuzzy Hebrew matching
+pydantic-settings              # configuration
+loguru                         # logging
+</pre>
+
+<hr>
+<h2>Risks &amp; Mitigations</h2>
+<table>
+<tr><th>Risk</th><th>Mitigation</th></tr>
+<tr><td>Rami Levy tokens expire</td><td>Auto-refresh: detect 401 → re-auth via headless Playwright</td></tr>
+<tr><td>Shufersal DOM unknown</td><td>XHR interception over DOM scraping; <code>playwright codegen</code></td></tr>
+<tr><td>Victory/stor.ai undocumented</td><td><code>playwright codegen</code>; stor.ai patterns reusable</td></tr>
+<tr><td>Hebrew fuzzy matching</td><td>Confidence scores; user confirms; improves with history</td></tr>
+<tr><td>Anti-bot detection</td><td>Persistent sessions, real login, human-like delays</td></tr>
+</table>
+
+<hr>
+<h2>Reference Projects</h2>
+<ul>
+<li><a href="https://github.com/OpenIsraeliSupermarkets/israeli-supermarket-scarpers">il-supermarket-scraper</a> — government price XML</li>
+<li><a href="https://github.com/OpenIsraeliSupermarkets/israeli-supermarket-parsers">il-supermarket-parser</a> — XML parser</li>
+<li><a href="https://github.com/shilomagen/rami-levy-mcp">rami-levy-mcp</a> — Rami Levy API docs</li>
+<li><a href="https://github.com/matipojo/shufersal-mcp">shufersal-mcp</a> — Shufersal automation reference</li>
+<li><a href="https://github.com/o-b-one/groceries-mcp">groceries-mcp</a> — multi-chain MCP</li>
+</ul>
+
+<hr>
+<p style="color:#888;font-size:0.85em;margin-top:20px">Branch: <code>claude/grocery-price-comparison-5DM6d</code> • CLAUDE.md ensures session continuity • Ready to start Phase 1</p>
+
+</body>
+</html>
